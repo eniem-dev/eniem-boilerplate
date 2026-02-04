@@ -48,13 +48,26 @@ For each logical work unit, create an issue:
 bd create --type=task \
   --title="[Action verb] [specific deliverable]" \
   --description="[What to implement]" \
-  --design="Files: [paths]
-Pattern: [reference existing code]
-Edge cases: [from spec]" \
-  --notes="Verify: [command]
-Epic: [epic-id]" \
+  --design="## Context
+[Why this task exists, dependencies]
+
+## Acceptance Criteria
+- [ ] [Specific deliverable 1]
+- [ ] [Specific deliverable 2]
+
+## Files
+- \`path/to/file.ts\` (create|modify)
+
+## Patterns
+- See \`path/to/example/\` for reference
+
+## Verify
+[command to run]" \
+  --notes="Epic: [epic-id]" \
   --priority=2
 ```
+
+**Design field is REQUIRED** with all 5 sections. This enables any model to execute.
 
 **Task granularity:** Each task should take ~2 minutes. If longer, break it down.
 
@@ -119,7 +132,7 @@ Review each issue against the spec:
 - [ ] Acceptance criteria captured in descriptions?
 - [ ] Dependencies model correct build order?
 - [ ] Tasks are atomic (~2 min each)?
-- [ ] Design fields have enough detail?
+- [ ] Design fields have ALL 5 sections (Context, Acceptance Criteria, Files, Patterns, Verify)?
 - [ ] Verification commands are testable?
 
 ### Step 3: Update Issues

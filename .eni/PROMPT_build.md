@@ -31,6 +31,22 @@ if [ "$CURRENT_BRANCH" != "$BUILD_BRANCH" ]; then
 fi
 ```
 
+## Phase 0.5: Blocked Task Pre-Check
+
+Before claiming any work, check for blockers:
+
+```bash
+blocked=$(bd blocked 2>/dev/null)
+if [ -n "$blocked" ]; then
+  echo "BLOCKED TASKS EXIST:"
+  echo "$blocked"
+  echo "Resolve blockers before continuing."
+  exit 1
+fi
+```
+
+If blocked tasks exist, **STOP** and report. Do not waste cycles on dependent work.
+
 ## Phase 1: Check Ready Tasks
 
 ```bash
@@ -80,14 +96,25 @@ When validation passes:
 
 ```bash
 git add -A
-git commit -m "feat: [task description]"
+git commit -m "$(cat <<'EOF'
+feat({{EPIC_NAME}}): [task description]
+
+Progress: [what was completed this commit]
+Next: [what remains for this epic, or "none" if last task]
+EOF
+)"
 bd close <task-id>
 git push -u origin HEAD
 ```
 
+**Commit message format is REQUIRED:**
+- Line 1: `feat(epic): short description`
+- Line 3: `Progress:` what this commit achieved
+- Line 4: `Next:` remaining work (enables context recovery)
+
 Exit - the loop will restart for the next task.
 
-## Phase 5: Create PR
+## Phase 5: Create PR & Archive Spec
 
 When no ready tasks remain for this epic/scope:
 
@@ -96,23 +123,37 @@ When no ready tasks remain for this epic/scope:
    bd list --status=open  # Should show no tasks for this epic
    ```
 
-2. Create pull request:
+2. Get completed tasks for PR body:
+   ```bash
+   bd list --status=done  # Filter for this epic's tasks
+   ```
+
+3. Create pull request with structured description:
    ```bash
    gh pr create --title "feat: {{EPIC_NAME}}" --body "$(cat <<'EOF'
    ## Summary
-   Implementation of {{EPIC_NAME}} epic.
+   Implements {{EPIC_NAME}} per specs/{{EPIC_NAME}}.md
 
-   ## Changes
-   [List main changes]
+   ### Completed Tasks
+   [List beads closed for this epic - from bd list --status=done]
 
-   ## Test plan
-   - [ ] Verified build passes
-   - [ ] Verified lint passes
+   ### Testing
+   - `pnpm build && pnpm lint` passing
+   - Manual: [describe what was manually tested]
    EOF
    )"
    ```
 
-3. Output completion signal:
+4. Archive the spec:
+   ```bash
+   mkdir -p specs/archive
+   mv specs/{{EPIC_NAME}}.md specs/archive/
+   git add specs/
+   git commit -m "chore: archive specs/{{EPIC_NAME}}.md"
+   git push
+   ```
+
+5. Output completion signal:
    ```
    :::ENI_ALL_TASKS_COMPLETE:::
    ```
