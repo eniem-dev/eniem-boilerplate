@@ -19,7 +19,7 @@ print_usage() {
   echo ""
   echo "Usage:"
   echo "  ./loop.sh plan <spec-name> [N] [-i]    Create beads from spec (default: 3 iterations)"
-  echo "  ./loop.sh build [epic-name] [N] [-i]   Build mode (default: 1 iteration, all ready tasks)"
+  echo "  ./loop.sh build [epic-name] [N] [-i]   Build mode (default: 10 iterations, all ready tasks)"
   echo ""
   echo "Options:"
   echo "  -i    Interactive mode (watch Claude work in real-time)"
@@ -199,7 +199,7 @@ case "${1:-}" in
 
     # Parse arguments: [epic-name] [iterations]
     EPIC_NAME=""
-    MAX_ITERATIONS=1
+    MAX_ITERATIONS=10
     for arg in "${@:2}"; do
       if [[ "$arg" == -* ]]; then
         continue
