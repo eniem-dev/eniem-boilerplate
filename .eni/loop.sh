@@ -18,8 +18,8 @@ print_usage() {
   echo -e "${BLUE}ENI Loop - Autonomous AI Coding${NC}"
   echo ""
   echo "Usage:"
-  echo "  ./loop.sh plan <spec-name> [N] [-i]   Create beads from spec (default: 3 iterations)"
-  echo "  ./loop.sh build [N] [-i]              Build mode (default: 1 iteration)"
+  echo "  ./loop.sh plan <spec-name> [N] [-i]    Create beads from spec (default: 3 iterations)"
+  echo "  ./loop.sh build [epic-name] [N] [-i]   Build mode (default: 1 iteration, all ready tasks)"
   echo ""
   echo "Options:"
   echo "  -i    Interactive mode (watch Claude work in real-time)"
@@ -27,16 +27,16 @@ print_usage() {
   echo "Examples:"
   echo "  ./loop.sh plan usage-based-pricing        Create beads (3 iterations)"
   echo "  ./loop.sh plan usage-based-pricing 5      Create beads (5 iterations)"
-  echo "  ./loop.sh plan usage-based-pricing -i     Plan interactively"
-  echo "  ./loop.sh build                           Run 1 build iteration"
-  echo "  ./loop.sh build 10                        Run 10 build iterations"
-  echo "  ./loop.sh build 1 -i                      Run 1 iteration interactively"
+  echo "  ./loop.sh build                           Build all ready tasks (1 iteration)"
+  echo "  ./loop.sh build usage-based-pricing       Build only tasks from epic"
+  echo "  ./loop.sh build usage-based-pricing 10    Build epic tasks (10 iterations)"
+  echo "  ./loop.sh build 10 -i                     Build all (10 iterations, interactive)"
   echo ""
   echo "Workflow:"
   echo "  1. /functional-spec <name>    Create specs/<name>.md"
   echo "  2. ./loop.sh plan <name>      Create beads epic + issues"
   echo "  3. bd ready                   See what to work on"
-  echo "  4. ./loop.sh build            Implement tasks"
+  echo "  4. ./loop.sh build [epic]     Implement tasks"
 }
 
 LAST_OUTPUT=""
@@ -45,6 +45,7 @@ run_claude() {
   local prompt_file="$1"
   local spec_name="${2:-}"
   local iteration="${3:-1}"
+  local epic_name="${4:-}"
   local prompt_content
 
   prompt_content=$(cat "$prompt_file")
@@ -54,6 +55,11 @@ run_claude() {
     prompt_content=$(echo "$prompt_content" | sed "s|{{SPEC_NAME}}|$spec_name|g")
   fi
   prompt_content=$(echo "$prompt_content" | sed "s|{{ITERATION}}|$iteration|g")
+  if [ -n "$epic_name" ]; then
+    prompt_content=$(echo "$prompt_content" | sed "s|{{EPIC_NAME}}|$epic_name|g")
+  else
+    prompt_content=$(echo "$prompt_content" | sed "s|{{EPIC_NAME}}||g")
+  fi
 
   if $INTERACTIVE; then
     # Interactive: use script to preserve TTY for full UI while capturing output
@@ -191,25 +197,43 @@ case "${1:-}" in
   build)
     check_requirements
 
-    # Get max iterations (skip flags)
+    # Parse arguments: [epic-name] [iterations]
+    EPIC_NAME=""
     MAX_ITERATIONS=1
     for arg in "${@:2}"; do
-      if [[ "$arg" =~ ^[0-9]+$ ]]; then
+      if [[ "$arg" == -* ]]; then
+        continue
+      elif [[ "$arg" =~ ^[0-9]+$ ]]; then
         MAX_ITERATIONS="$arg"
-        break
+      else
+        EPIC_NAME="$arg"
       fi
     done
 
     # Check if there are ready beads
-    READY_COUNT=$(bd ready 2>/dev/null | grep -c "^beads-" || echo "0")
+    if [ -n "$EPIC_NAME" ]; then
+      # Filter by epic name in title
+      READY_COUNT=$(bd ready 2>/dev/null | grep -i "$EPIC_NAME" | grep -c "^beads-" || echo "0")
+    else
+      READY_COUNT=$(bd ready 2>/dev/null | grep -c "^beads-" || echo "0")
+    fi
+
     if [ "$READY_COUNT" -eq 0 ]; then
       echo -e "${YELLOW}Warning: No ready beads found${NC}"
+      if [ -n "$EPIC_NAME" ]; then
+        echo "No ready tasks for epic: $EPIC_NAME"
+      fi
       echo "Run './loop.sh plan <spec-name>' first to create beads"
       echo ""
       echo "Or check blocked issues with: bd blocked"
     fi
 
     echo -e "${GREEN}=== Build Mode ===${NC}"
+    if [ -n "$EPIC_NAME" ]; then
+      echo "Epic: $EPIC_NAME"
+    else
+      echo "Building all ready tasks"
+    fi
     $INTERACTIVE && echo -e "${BLUE}Interactive mode enabled${NC}"
     echo "Running $MAX_ITERATIONS iteration(s)..."
     echo "Ready tasks: $READY_COUNT"
@@ -218,7 +242,7 @@ case "${1:-}" in
       echo ""
       echo -e "${BLUE}--- Iteration $i of $MAX_ITERATIONS ---${NC}"
 
-      if ! run_claude "$SCRIPT_DIR/PROMPT_build.md"; then
+      if ! run_claude "$SCRIPT_DIR/PROMPT_build.md" "" "1" "$EPIC_NAME"; then
         echo -e "${RED}Build iteration failed${NC}"
         exit 1
       fi

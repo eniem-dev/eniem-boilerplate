@@ -2,127 +2,139 @@
 
 You are in BUILD mode. Implement one task from beads, validate, and commit.
 
-## Phase 0: Startup
+**Epic filter:** `{{EPIC_NAME}}` (empty = all ready tasks)
 
-Before any work:
+## Phase 0: Branch Setup
 
-1. Run `bd ready` to see available tasks
-2. If no ready tasks, run `bd blocked` to see what's waiting
-3. Check git status - abort if uncommitted changes exist
-4. Run `pnpm build` to verify clean state
+Before any work, ensure correct branch:
 
-## Phase 0.5: Orient
+**If epic specified (`{{EPIC_NAME}}`):**
+```bash
+# Check if on feature branch for this epic
+EXPECTED_BRANCH="feat/{{EPIC_NAME}}"
+CURRENT_BRANCH=$(git branch --show-current)
 
-Use parallel Task tools (subagent_type=Explore) to study:
+if [ "$CURRENT_BRANCH" != "$EXPECTED_BRANCH" ]; then
+  # Create and checkout feature branch if it doesn't exist
+  git checkout -b "$EXPECTED_BRANCH" 2>/dev/null || git checkout "$EXPECTED_BRANCH"
+fi
+```
 
-- `specs/*` — application specifications
-- `CLAUDE.md` — project conventions and patterns
-- `src/*` — application source code (for reference)
+**If no epic (building all):**
+```bash
+# Create dated build branch
+BUILD_BRANCH="build-$(date +%Y%m%d)"
+CURRENT_BRANCH=$(git branch --show-current)
 
-## Phase 1: Select & Claim Task
+if [ "$CURRENT_BRANCH" != "$BUILD_BRANCH" ]; then
+  git checkout -b "$BUILD_BRANCH" 2>/dev/null || git checkout "$BUILD_BRANCH"
+fi
+```
 
-Pick the highest priority ready task:
+## Phase 1: Check Ready Tasks
 
 ```bash
 bd ready
+```
+
+**If epic specified:** Only consider tasks matching `{{EPIC_NAME}}` in their title or notes.
+
+If no ready tasks:
+1. Run `bd blocked` to see what's waiting
+2. If ALL tasks for this epic/scope are complete → go to **Phase 5: Create PR**
+3. Otherwise, output `:::ENI_ALL_TASKS_COMPLETE:::` and exit
+
+## Phase 2: Select & Claim Task
+
+Pick the highest priority ready task (filtered by epic if specified):
+
+```bash
 bd show <task-id>
 bd update <task-id> --status=in_progress
 ```
 
-Read the task's description, design, and notes fields for implementation guidance.
+Read the task's description, design, and notes fields.
 
-Before making changes, search the codebase (don't assume not implemented) to:
+Before making changes, search the codebase to:
+- Verify functionality doesn't already exist
+- Understand existing patterns
+- Identify files to modify
 
-- Verify the functionality doesn't already exist
-- Understand existing patterns in related code
-- Identify all files that need creation/modification
+## Phase 3: Implement & Validate
 
-## Phase 2: Implement
-
-Implement the task following:
-
+Implement following:
 - The design field in the bead
 - Patterns in `CLAUDE.md`
 - Existing code conventions
 
-Use parallel Task tools for file reads and searches. Run build/test commands directly (not via subagent).
-
-## Phase 3: Validate
-
-After implementing:
-
-1. Run the `Verify:` command from the task's notes field - must pass
+After implementing, validate:
+1. Run `Verify:` command from task notes - must pass
 2. Run `pnpm build` - must pass
 3. Run `pnpm lint` - must pass
 
-If validation fails, fix and re-validate. Do NOT proceed until validation passes.
+If validation fails, fix and re-validate. Do NOT proceed until passing.
 
 ## Phase 4: Commit & Close
 
 When validation passes:
 
-1. Create a focused commit:
+```bash
+git add -A
+git commit -m "feat: [task description]"
+bd close <task-id>
+git push -u origin HEAD
+```
+
+Exit - the loop will restart for the next task.
+
+## Phase 5: Create PR
+
+When no ready tasks remain for this epic/scope:
+
+1. Verify all tasks are closed:
    ```bash
-   git add -A
-   git commit -m "feat: [task description]"
+   bd list --status=open  # Should show no tasks for this epic
    ```
 
-2. Close the bead:
+2. Create pull request:
    ```bash
-   bd close <task-id>
+   gh pr create --title "feat: {{EPIC_NAME}}" --body "$(cat <<'EOF'
+   ## Summary
+   Implementation of {{EPIC_NAME}} epic.
+
+   ## Changes
+   [List main changes]
+
+   ## Test plan
+   - [ ] Verified build passes
+   - [ ] Verified lint passes
+   EOF
+   )"
    ```
 
-3. Push changes:
-   ```bash
-   git push
+3. Output completion signal:
    ```
-
-4. Exit - the loop will restart for the next task.
+   :::ENI_ALL_TASKS_COMPLETE:::
+   ```
 
 ## Error Recovery
 
 If validation fails:
-
 1. First attempt: Targeted fix based on error
 2. Second attempt: Alternative approach
 3. Third attempt:
-   - Create a blocking issue: `bd create --type=bug --title="Fix: [error]"`
-   - Link it: `bd dep add <original-task> <bug-id>`
+   - Create blocking bug: `bd create --type=bug --title="Fix: [error]"`
    - Do NOT commit broken code
    - Exit
 
-## Session End Protocol
-
-Before ending any session:
-
-```bash
-bd sync --from-main    # Pull beads updates from main
-git status             # Verify all committed
-```
-
 ## Guardrails
 
-1. **Single task** — implement ONE task per iteration
-2. **Search first** — don't assume not implemented
-3. **Validate before commit** — never commit failing code
-4. **Direct commands** — run build/tests directly, not via subagent
-5. **Follow patterns** — use `CLAUDE.md` over introducing new ones
-6. **Close beads** — always `bd close` after committing
-7. **Exit after commit** — fresh context for next iteration
-
-## Exit Conditions
-
-- Task completed and committed → Exit normally
-- Validation failing after 3 attempts → Exit with error, do NOT commit
-- No ready tasks remaining → Output completion signal and exit
-
-IMPORTANT: When `bd ready` returns no tasks (all work complete), output exactly:
-
-```
-:::ENI_ALL_TASKS_COMPLETE:::
-```
-
-This signals the loop to stop. Do NOT output this if any tasks remain.
+1. **Branch first** — ensure correct branch before any work
+2. **Single task** — implement ONE task per iteration
+3. **Epic filter** — only work on tasks matching epic if specified
+4. **Validate before commit** — never commit failing code
+5. **Close beads** — always `bd close` after committing
+6. **PR at end** — create PR when no tasks remain
 
 ## Command Reference
 
@@ -138,6 +150,7 @@ bd update <id> --status=in_progress
 # Complete work
 bd close <id>         # Mark done
 
-# Sync
-bd sync --from-main   # Pull beads from main branch
+# Git
+git checkout -b feat/<epic-name>
+gh pr create --title "..." --body "..."
 ```

@@ -59,11 +59,11 @@ Epic: [epic-id]" \
 **Task granularity:** Each task should take ~2 minutes. If longer, break it down.
 
 **Standard structure:**
-1. First issue: Create branch `feat/{{SPEC_NAME}}`
-2. Schema issues: Data model changes
-3. Backend issues: Queries, actions, handlers
-4. Frontend issues: Components, pages
-5. Last issue: Create PR (depends on all others)
+1. Schema issues: Data model changes
+2. Backend issues: Queries, actions, handlers
+3. Frontend issues: Components, pages
+
+**Note:** Branch creation and PR are handled by the build prompt, not here.
 
 ### Step 5: Add Dependencies
 
@@ -74,7 +74,6 @@ bd dep add <issue> <depends-on>
 Patterns:
 - Schema → API → UI
 - Utils → features using them
-- All work → PR issue
 
 ### Step 6: Output Summary
 
@@ -173,7 +172,7 @@ This signals the loop to stop early.
 2. **DO NOT use TodoWrite** — beads is the tracker
 3. **~2 minute tasks** — break down larger work
 4. **Check duplicates** — scan beads before creating
-5. **Branch first, PR last** — standard git workflow
+5. **NO branch/PR tasks** — build prompt handles git workflow
 
 ## Command Reference
 
