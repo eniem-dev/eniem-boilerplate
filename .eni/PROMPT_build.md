@@ -78,7 +78,20 @@ Before making changes, search the codebase to:
 
 ## Phase 3: Implement & Validate
 
-Implement following:
+### Tracer Bullet Mindset
+
+Don't outrun your headlights. Build small, validate early, expand from working code.
+
+- Build the **minimum** that satisfies acceptance criteria
+- Test **immediately** after each small piece
+- Get feedback before expanding
+- Never build complete layers in isolation
+
+If the task is a `[Tracer]` task, it MUST touch all layers end-to-end before moving on.
+
+### Implementation
+
+Follow:
 - The design field in the bead
 - Patterns in `CLAUDE.md`
 - Existing code conventions
@@ -170,12 +183,13 @@ If validation fails:
 
 ## Guardrails
 
-1. **Branch first** — ensure correct branch before any work
-2. **Single task** — implement ONE task per iteration
-3. **Epic filter** — only work on tasks matching epic if specified
-4. **Validate before commit** — never commit failing code
-5. **Close beads** — always `bd close` after committing
-6. **PR at end** — create PR when no tasks remain
+1. **Tracer bullets** — build small, test immediately, expand from working code
+2. **Branch first** — ensure correct branch before any work
+3. **Single task** — implement ONE task per iteration
+4. **Epic filter** — only work on tasks matching epic if specified
+5. **Validate before commit** — never commit failing code
+6. **Close beads** — always `bd close` after committing
+7. **PR at end** — create PR when no tasks remain
 
 ## Command Reference
 

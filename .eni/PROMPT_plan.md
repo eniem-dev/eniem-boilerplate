@@ -71,10 +71,29 @@ bd create --type=task \
 
 **Task granularity:** Each task should take ~2 minutes. If longer, break it down.
 
+### Tracer Bullet First
+
+The **FIRST task** must be a tracer bullet: a tiny end-to-end slice that touches all layers.
+
+From _The Pragmatic Programmer_: Don't build horizontal layers in isolation. Build one vertical slice first, test it, get feedback, then expand.
+
+**Example:** For a "credits system" feature:
+- ❌ Wrong: Schema → all queries → all actions → all UI
+- ✅ Right: Schema + one query + one action + one UI = tracer bullet, then expand
+
+**Tracer bullet task pattern:**
+```
+Title: "[Tracer] Implement [minimal e2e slice]"
+Description: "End-to-end slice validating architecture"
+```
+
+After the tracer bullet validates the approach, create remaining tasks that expand horizontally.
+
 **Standard structure:**
-1. Schema issues: Data model changes
-2. Backend issues: Queries, actions, handlers
-3. Frontend issues: Components, pages
+1. **Tracer bullet** — minimal e2e slice (DB → API → UI if applicable)
+2. Schema issues: Remaining data model changes
+3. Backend issues: Queries, actions, handlers
+4. Frontend issues: Components, pages
 
 **Note:** Branch creation and PR are handled by the build prompt, not here.
 
