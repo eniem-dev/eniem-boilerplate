@@ -63,3 +63,29 @@ export async function getCreditsBalance(
     throw error;
   }
 }
+
+/**
+ * Check if user has sufficient credits for an action.
+ *
+ * @param userId - The app user ID
+ * @param meterId - The Polar meter identifier
+ * @param requiredAmount - The number of credits required
+ * @returns true if user has >= requiredAmount credits, false otherwise
+ */
+export async function hasCredits(
+  userId: string,
+  meterId: string,
+  requiredAmount: number
+): Promise<boolean> {
+  const creditBalance = await getCreditsBalance(userId, meterId);
+
+  // No customer/subscription = no credits
+  if (!creditBalance) {
+    return false;
+  }
+
+  // Treat negative balance as 0 (Polar allows negative, we don't)
+  const effectiveBalance = Math.max(0, creditBalance.balance);
+
+  return effectiveBalance >= requiredAmount;
+}
