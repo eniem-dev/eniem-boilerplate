@@ -131,3 +131,65 @@ export async function assertHasCredits(
     throw new UnauthorizedError(locales.errors.creditsCheckFailed);
   }
 }
+
+/**
+ * Event metadata type for usage ingestion.
+ * Values can be string, number, or boolean per Polar SDK constraints.
+ */
+export type UsageMetadata = Record<string, string | number | boolean>;
+
+/**
+ * Single usage event for ingestion.
+ */
+export interface UsageEvent {
+  name: string;
+  metadata?: UsageMetadata;
+  timestamp?: Date;
+}
+
+/**
+ * Ingest usage events to Polar to decrement the user's credit meter.
+ *
+ * Call this after an action completes successfully. Events are immutable
+ * once ingested and cannot be changed or deleted.
+ *
+ * @param userId - The app user ID (used as externalCustomerId in Polar)
+ * @param events - Single event or array of events to ingest
+ * @returns void - errors are logged but not thrown (action already completed)
+ */
+export async function ingestUsage(
+  userId: string,
+  events: UsageEvent | UsageEvent[]
+): Promise<void> {
+  const eventArray = Array.isArray(events) ? events : [events];
+
+  if (eventArray.length === 0) {
+    return;
+  }
+
+  try {
+    await polarClient.events.ingest({
+      events: eventArray.map((event) => ({
+        name: event.name,
+        externalCustomerId: userId,
+        metadata: event.metadata,
+        timestamp: event.timestamp,
+      })),
+    });
+
+    logger.info("Usage events ingested", {
+      userId,
+      eventCount: eventArray.length,
+      eventNames: eventArray.map((e) => e.name),
+    });
+  } catch (error) {
+    // Log error but don't throw - the action already completed
+    // Consider implementing a retry queue for production
+    logger.error("Failed to ingest usage events", {
+      userId,
+      eventCount: eventArray.length,
+      eventNames: eventArray.map((e) => e.name),
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
