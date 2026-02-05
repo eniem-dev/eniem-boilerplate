@@ -2,38 +2,11 @@ import { polarClient } from "@/lib/polar";
 import { logger } from "@/lib/logger";
 import { UnauthorizedError } from "@/lib/errors";
 import { locales } from "@/locales";
-import { ResourceNotFound } from "@polar-sh/sdk/models/errors/resourcenotfound.js";
+import { getCustomerId } from "@/features/billing/services/billing.service";
 import type { CreditBalance } from "../models/credits.model";
 
-/**
- * Resolves a Polar customer ID from the app user ID.
- *
- * Polar creates a customer record when a user makes a purchase or subscribes.
- * This function looks up the Polar customer by the external ID (our user ID).
- *
- * @param userId - The app user ID (used as externalId in Polar)
- * @returns The Polar customer ID, or null if no subscription/purchase exists
- */
-export async function getCustomerId(userId: string): Promise<string | null> {
-  try {
-    const customer = await polarClient.customers.getExternal({
-      externalId: userId,
-    });
-    return customer.id;
-  } catch (error) {
-    // User has no subscription/purchase - expected case, return null cleanly
-    if (error instanceof ResourceNotFound) {
-      return null;
-    }
-
-    // Unexpected error (API failure, network issue, etc.) - log and return null
-    logger.error("Failed to get Polar customer ID", {
-      userId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return null;
-  }
-}
+// Re-export for backwards compatibility
+export { getCustomerId };
 
 export async function getCreditsBalance(
   userId: string,
