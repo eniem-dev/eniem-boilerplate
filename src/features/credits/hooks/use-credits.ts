@@ -1,8 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { ApiResponse } from "@/lib/server-handler";
 import type { CreditBalance } from "../models/credits.model";
-import type { CreditsApiResponse } from "@/app/api/credits/[meterId]/route";
+import type { CreditsData } from "@/app/api/credits/[meterId]/route";
 
 interface UseCreditsResult {
   balance: CreditBalance | null;
@@ -12,7 +13,7 @@ interface UseCreditsResult {
   refetch: () => void;
 }
 
-async function fetchCredits(meterId: string): Promise<CreditsApiResponse> {
+async function fetchCredits(meterId: string): Promise<ApiResponse<CreditsData>> {
   const response = await fetch(`/api/credits/${meterId}`);
   if (!response.ok) {
     throw new Error("Failed to fetch credits");
@@ -53,8 +54,8 @@ export function useCredits(meterId: string): UseCreditsResult {
   });
 
   return {
-    balance: data?.success ? data.data : null,
-    hasCustomer: data?.success ? data.hasCustomer : false,
+    balance: data?.success ? data.data.balance : null,
+    hasCustomer: data?.success ? data.data.hasCustomer : false,
     isLoading,
     error: error as Error | null,
     refetch,
