@@ -1,5 +1,7 @@
 import { polarClient } from "@/lib/polar";
 import { logger } from "@/lib/logger";
+import { UnauthorizedError } from "@/lib/errors";
+import { locales } from "@/locales";
 import { ResourceNotFound } from "@polar-sh/sdk/models/errors/resourcenotfound.js";
 import type { CreditBalance } from "../models/credits.model";
 
@@ -88,4 +90,44 @@ export async function hasCredits(
   const effectiveBalance = Math.max(0, creditBalance.balance);
 
   return effectiveBalance >= requiredAmount;
+}
+
+/**
+ * Server-side guard that throws if user lacks sufficient credits.
+ *
+ * Use this in server actions before credit-consuming operations.
+ * Implements fail-safe: throws on API errors (doesn't allow action to proceed).
+ *
+ * @param userId - The app user ID
+ * @param meterId - The Polar meter identifier
+ * @param requiredAmount - The number of credits required
+ * @throws UnauthorizedError if credits insufficient or API unavailable
+ */
+export async function assertHasCredits(
+  userId: string,
+  meterId: string,
+  requiredAmount: number
+): Promise<void> {
+  try {
+    const hasSufficientCredits = await hasCredits(userId, meterId, requiredAmount);
+
+    if (!hasSufficientCredits) {
+      logger.warn("Insufficient credits", { userId, meterId, requiredAmount });
+      throw new UnauthorizedError(locales.errors.insufficientCredits);
+    }
+  } catch (error) {
+    // Re-throw UnauthorizedError as-is
+    if (error instanceof UnauthorizedError) {
+      throw error;
+    }
+
+    // API failure - fail-safe by blocking the action
+    logger.error("Credits check failed", {
+      userId,
+      meterId,
+      requiredAmount,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new UnauthorizedError(locales.errors.creditsCheckFailed);
+  }
 }
