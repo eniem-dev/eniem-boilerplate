@@ -3,7 +3,7 @@ import { logger } from "@/lib/logger";
 import { UnauthorizedError } from "@/lib/errors";
 import { locales } from "@/locales";
 import { getCustomerId } from "@/features/billing/services/billing.service";
-import type { CreditBalance } from "../models/credits.model";
+import type { CreditBalance, UsageEvent } from "../models/credits.model";
 
 // Re-export for backwards compatibility
 export { getCustomerId };
@@ -103,21 +103,6 @@ export async function assertHasCredits(
     });
     throw new UnauthorizedError(locales.errors.creditsCheckFailed);
   }
-}
-
-/**
- * Event metadata type for usage ingestion.
- * Values can be string, number, or boolean per Polar SDK constraints.
- */
-export type UsageMetadata = Record<string, string | number | boolean>;
-
-/**
- * Single usage event for ingestion.
- */
-export interface UsageEvent {
-  name: string;
-  metadata?: UsageMetadata;
-  timestamp?: Date;
 }
 
 /**

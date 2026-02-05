@@ -1,5 +1,5 @@
 // Models
-export type { CreditBalance } from "./models/credits.model";
+export type { CreditBalance, UsageMetadata, UsageEvent } from "./models/credits.model";
 
 // Services
 export {
@@ -9,8 +9,6 @@ export {
   assertHasCredits,
   ingestUsage,
 } from "./services/credits.service";
-
-export type { UsageMetadata, UsageEvent } from "./services/credits.service";
 
 // Queries
 export { getCreditsBalanceQuery } from "./queries/credits.query";
