@@ -10,6 +10,40 @@ import { locales } from "@/locales";
 import { formatShortDate } from "@/features/billing/billing.util";
 import Link from "next/link";
 import { routes } from "@/config";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
+
+function MetadataTooltip({
+  metadata,
+}: {
+  metadata: Record<string, string | number | boolean>;
+}) {
+  if (Object.keys(metadata).length === 0) return null;
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="inline-block h-4 w-4 text-muted-foreground cursor-help" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <div className="space-y-1 text-xs">
+            {Object.entries(metadata).map(([key, value]) => (
+              <div key={key}>
+                <span className="font-medium">{key}:</span> {String(value)}
+              </div>
+            ))}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 interface CreditsUsageHistoryCardProps {
   events: UsageHistoryEvent[];
@@ -47,7 +81,12 @@ export function CreditsUsageHistoryCard({
                   <tbody>
                     {events.map((event) => (
                       <tr key={event.id} className="border-b last:border-b-0">
-                        <td className="py-4 pr-4 text-sm">{event.name}</td>
+                        <td className="py-4 pr-4 text-sm">
+                          <span className="inline-flex items-center gap-1.5">
+                            {event.name}
+                            <MetadataTooltip metadata={event.metadata} />
+                          </span>
+                        </td>
                         <td className="py-4 px-4 text-sm">
                           {formatShortDate(event.timestamp)}
                         </td>
@@ -66,7 +105,10 @@ export function CreditsUsageHistoryCard({
                   className="border rounded-lg p-4 space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{event.name}</span>
+                    <span className="text-sm font-medium inline-flex items-center gap-1.5">
+                      {event.name}
+                      <MetadataTooltip metadata={event.metadata} />
+                    </span>
                     <span className="text-sm text-muted-foreground">
                       {formatShortDate(event.timestamp)}
                     </span>
