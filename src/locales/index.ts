@@ -574,6 +574,14 @@ export const locales = {
         refunded: "Refunded",
       },
     },
+    creditsUsageHistoryCard: {
+      title: "Usage History",
+      emptyState: "No usage yet",
+      columns: {
+        event: "Event",
+        date: "Date",
+      },
+    },
   },
   NotFoundPage: {
     metadata: {

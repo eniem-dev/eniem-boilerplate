@@ -12,7 +12,14 @@ export {
 } from "./meters.generated";
 
 // Models
-export type { CreditBalance, UsageMetadata, UsageEvent } from "./models/credits.model";
+export type {
+  CreditBalance,
+  UsageMetadata,
+  UsageEvent,
+  UsageHistoryEvent,
+  UsageHistoryPagination,
+  UsageHistoryResult,
+} from "./models/credits.model";
 
 // Services
 export {
@@ -22,12 +29,15 @@ export {
   assertHasCredits,
   ingestUsage,
 } from "./services/credits.service";
+export { getUsageHistory } from "./services/credits-usage.service";
 
 // Queries
 export { getCreditsBalanceQuery } from "./queries/credits.query";
+export { getCreditsUsageQuery } from "./queries/credits-usage.query";
 
 // Hooks
 export { useCredits } from "./hooks/use-credits";
 
 // Components
 export { CreditBalance as CreditBalanceDisplay } from "./components/credit-balance";
+export { CreditsUsageHistoryCard } from "./components/credits-usage-history-card";
