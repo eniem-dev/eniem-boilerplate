@@ -1,7 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { UsageHistoryEvent } from "../models/credits.model";
 import { locales } from "@/locales";
 import { formatShortDate } from "@/features/billing/billing.util";
+import Link from "next/link";
+import { routes } from "@/config";
 
 interface CreditsUsageHistoryCardProps {
   events: UsageHistoryEvent[];
@@ -69,6 +77,16 @@ export function CreditsUsageHistoryCard({
           </>
         )}
       </CardContent>
+      {events.length > 0 && (
+        <CardFooter>
+          <Link
+            href={routes.account.billing.usage}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {l.showMore}
+          </Link>
+        </CardFooter>
+      )}
     </Card>
   );
 }

@@ -577,6 +577,7 @@ export const locales = {
     creditsUsageHistoryCard: {
       title: "Usage History",
       emptyState: "No usage yet",
+      showMore: "Show more",
       columns: {
         event: "Event",
         date: "Date",
