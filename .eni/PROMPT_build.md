@@ -195,6 +195,7 @@ If validation fails:
 5. **Validate before commit** — never commit failing code
 6. **Close beads** — always `bd close` after committing
 7. **PR at end** — create PR when no tasks remain
+8. **Tests required** — create colocated `.test.ts` files for implementation code
 
 ## Command Reference
 
