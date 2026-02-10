@@ -1,0 +1,46 @@
+import { describe, expect, it } from "vitest";
+
+import { getMeters, getMeter, sandboxMeters } from "./meters.generated";
+
+describe("meters.generated", () => {
+  describe("getMeters", () => {
+    it('returns sandboxMeters array for "sandbox" env', () => {
+      const meters = getMeters("sandbox");
+      expect(meters).toBe(sandboxMeters);
+      expect(meters.length).toBeGreaterThan(0);
+    });
+
+    it('returns meters for "production" env', () => {
+      const meters = getMeters("production");
+      expect(Array.isArray(meters)).toBe(true);
+    });
+  });
+
+  describe("getMeter", () => {
+    it("returns the correct meter object for a valid slug", () => {
+      const meter = getMeter("sandbox", "llm-tokens");
+      expect(meter).toBeDefined();
+      expect(meter?.slug).toBe("llm-tokens");
+      expect(meter?.name).toBe("LLM Tokens");
+      expect(meter?.polarMeterId).toBe(
+        "d1e2f3a4-5678-9abc-def0-1234567890ab"
+      );
+      expect(meter?.eventNames).toEqual(["llm-token-usage"]);
+    });
+
+    it("returns undefined for a nonexistent slug", () => {
+      // @ts-expect-error - testing invalid slug at runtime
+      const meter = getMeter("sandbox", "nonexistent");
+      expect(meter).toBeUndefined();
+    });
+  });
+
+  describe("sandboxMeters", () => {
+    it("preserves literal types (as const)", () => {
+      const firstMeter = sandboxMeters[0];
+      // Type-level check: slug should be the literal "llm-tokens", not string
+      const slug: "llm-tokens" = firstMeter.slug;
+      expect(slug).toBe("llm-tokens");
+    });
+  });
+});
