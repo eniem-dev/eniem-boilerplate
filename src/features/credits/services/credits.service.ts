@@ -114,9 +114,10 @@ export async function hasCredits(
 }
 
 /**
- * Server-side guard that throws if user lacks sufficient credits.
+ * Server-side guard that atomically checks and deducts credits.
  *
  * Use this in server actions before credit-consuming operations.
+ * Syncs from Polar (sync-on-read), then atomically deducts from local balance.
  * Implements fail-safe: throws on API errors (doesn't allow action to proceed).
  *
  * @param userId - The app user ID
@@ -130,13 +131,16 @@ export async function assertHasCredits(
   requiredAmount: number
 ): Promise<void> {
   try {
-    const hasSufficientCredits = await hasCredits(
-      userId,
-      meterId,
-      requiredAmount
-    );
+    const creditBalance = await getCreditsBalance(userId, meterId);
 
-    if (!hasSufficientCredits) {
+    if (!creditBalance) {
+      logger.warn("No Polar customer for credit check", { userId, meterId });
+      throw new UnauthorizedError(locales.errors.insufficientCredits);
+    }
+
+    const { success } = await deductCredits(userId, meterId, requiredAmount);
+
+    if (!success) {
       logger.warn("Insufficient credits", { userId, meterId, requiredAmount });
       throw new UnauthorizedError(locales.errors.insufficientCredits);
     }

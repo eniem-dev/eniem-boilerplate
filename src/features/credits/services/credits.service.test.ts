@@ -32,6 +32,7 @@ import {
   getCreditsBalance,
   deductCredits,
   hasCredits,
+  assertHasCredits,
 } from "./credits.service";
 
 const mockGetCustomerId = vi.mocked(getCustomerId);
@@ -298,5 +299,67 @@ describe("hasCredits", () => {
     expect(result).toBe(true);
     // Polar was called because no local row existed
     expect(mockGetStateExternal).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("assertHasCredits", () => {
+  it("deducts credits atomically on success", async () => {
+    mockGetCustomerId.mockResolvedValue("cust-1");
+    mockGetStateExternal.mockResolvedValue({
+      activeMeters: [{ meterId: "meter-1", balance: 50 }],
+    } as never);
+    prismaMock.creditBalance.upsert.mockResolvedValue({
+      id: "cb-1",
+      userId: "user-1",
+      meterId: "meter-1",
+      balance: 50,
+      updatedAt: new Date(),
+    });
+    prismaMock.creditBalance.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      assertHasCredits("user-1", "meter-1", 10)
+    ).resolves.toBeUndefined();
+
+    expect(prismaMock.creditBalance.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", meterId: "meter-1", balance: { gte: 10 } },
+      data: { balance: { decrement: 10 } },
+    });
+  });
+
+  it("throws UnauthorizedError when deduction fails (insufficient balance)", async () => {
+    mockGetCustomerId.mockResolvedValue("cust-1");
+    mockGetStateExternal.mockResolvedValue({
+      activeMeters: [{ meterId: "meter-1", balance: 5 }],
+    } as never);
+    prismaMock.creditBalance.upsert.mockResolvedValue({
+      id: "cb-1",
+      userId: "user-1",
+      meterId: "meter-1",
+      balance: 5,
+      updatedAt: new Date(),
+    });
+    prismaMock.creditBalance.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      assertHasCredits("user-1", "meter-1", 10)
+    ).rejects.toThrow("Insufficient credits");
+  });
+
+  it("throws UnauthorizedError when no Polar customer exists", async () => {
+    mockGetCustomerId.mockResolvedValue(null);
+
+    await expect(
+      assertHasCredits("user-1", "meter-1", 1)
+    ).rejects.toThrow("Insufficient credits");
+  });
+
+  it("throws creditsCheckFailed on unexpected errors (fail-safe)", async () => {
+    mockGetCustomerId.mockResolvedValue("cust-1");
+    mockGetStateExternal.mockRejectedValue(new Error("Polar API down"));
+
+    await expect(
+      assertHasCredits("user-1", "meter-1", 1)
+    ).rejects.toThrow("Unable to verify credits");
   });
 });
