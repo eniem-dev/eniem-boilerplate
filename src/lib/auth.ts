@@ -193,6 +193,7 @@ export const auth = betterAuth({
 
             if (externalId) {
               await syncSubscription(externalId, activeSubscriptions || []);
+              await prisma.creditBalance.deleteMany({ where: { userId: externalId } });
             }
 
             logger.info("Polar: Customer state changed", { payload });
@@ -203,6 +204,11 @@ export const auth = betterAuth({
               userId: payload.data.customer?.externalId,
               product: payload.data.product.name,
             });
+
+            const userId = payload.data.customer?.externalId;
+            if (userId) {
+              await prisma.creditBalance.deleteMany({ where: { userId } });
+            }
           },
           onPayload: async (payload) => {
             logger.info("Polar: Webhook received", { payload });
