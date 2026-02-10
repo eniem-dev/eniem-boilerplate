@@ -96,6 +96,10 @@ Follow:
 - Patterns in `CLAUDE.md`
 - Existing code conventions
 
+**Test requirement:** Each implementation must include colocated `.test.ts` files.
+- Exception: config/schema/static-data-only changes can skip test creation
+- `pnpm test` always runs regardless of exception
+
 After implementing, validate:
 1. Run `Verify:` command from task notes - must pass
 2. Run `pnpm build` - must pass
