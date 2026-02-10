@@ -41,3 +41,4 @@ export { useCredits } from "./hooks/use-credits";
 // Components
 export { CreditBalance as CreditBalanceDisplay } from "./components/credit-balance";
 export { CreditsUsageHistoryCard } from "./components/credits-usage-history-card";
+export { CreditsUsageHistorySkeleton } from "./components/credits-usage-history-skeleton";
