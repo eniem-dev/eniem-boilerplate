@@ -4,32 +4,34 @@ You are in BUILD mode. Implement one task from beads, validate, and commit.
 
 **Epic filter:** `{{EPIC_NAME}}` (empty = all ready tasks)
 
-## Phase 0: Branch Setup
+## Phase 0: Worktree Setup
 
-Before any work, ensure correct branch:
+Before any work, create or enter a git worktree for isolation.
 
-**If epic specified (`{{EPIC_NAME}}`):**
+**Set worktree path based on epic:**
 ```bash
-# Check if on feature branch for this epic
-EXPECTED_BRANCH="feat/{{EPIC_NAME}}"
-CURRENT_BRANCH=$(git branch --show-current)
-
-if [ "$CURRENT_BRANCH" != "$EXPECTED_BRANCH" ]; then
-  # Create and checkout feature branch if it doesn't exist
-  git checkout -b "$EXPECTED_BRANCH" 2>/dev/null || git checkout "$EXPECTED_BRANCH"
+if [ -n "{{EPIC_NAME}}" ]; then
+  BRANCH="feat/{{EPIC_NAME}}"
+  WORKTREE=".worktrees/feat/{{EPIC_NAME}}"
+else
+  BRANCH="build-$(date +%Y%m%d)"
+  WORKTREE=".worktrees/$BRANCH"
 fi
 ```
 
-**If no epic (building all):**
+**Create worktree if it doesn't exist:**
 ```bash
-# Create dated build branch
-BUILD_BRANCH="build-$(date +%Y%m%d)"
-CURRENT_BRANCH=$(git branch --show-current)
-
-if [ "$CURRENT_BRANCH" != "$BUILD_BRANCH" ]; then
-  git checkout -b "$BUILD_BRANCH" 2>/dev/null || git checkout "$BUILD_BRANCH"
+if [ ! -d "$WORKTREE" ]; then
+  # Create worktree with new branch (or existing branch if it exists)
+  git worktree add "$WORKTREE" -b "$BRANCH" 2>/dev/null || git worktree add "$WORKTREE" "$BRANCH"
+  cd "$WORKTREE"
+  pnpm install
+else
+  cd "$WORKTREE"
 fi
 ```
+
+**IMPORTANT:** All work happens inside the worktree directory. Stay in `$WORKTREE` for the entire build session.
 
 ## Phase 0.5: Blocked Task Pre-Check
 
@@ -211,7 +213,7 @@ bd update <id> --status=in_progress
 # Complete work
 bd close <id>         # Mark done
 
-# Git
-git checkout -b feat/<epic-name>
+# Git (worktree)
+git worktree add .worktrees/feat/<epic-name> -b feat/<epic-name>
 gh pr create --title "..." --body "..."
 ```
