@@ -100,6 +100,7 @@ After implementing, validate:
 1. Run `Verify:` command from task notes - must pass
 2. Run `pnpm build` - must pass
 3. Run `pnpm lint` - must pass
+4. Run `pnpm test` - must pass
 
 If validation fails, fix and re-validate. Do NOT proceed until passing.
 

@@ -61,6 +61,9 @@ bd create --type=task \
 ## Patterns
 - See \`path/to/example/\` for reference
 
+## Tests
+[Expected test cases: what to test and expected outcomes]
+
 ## Verify
 [command to run]" \
   --notes="Epic: [epic-id]" \
