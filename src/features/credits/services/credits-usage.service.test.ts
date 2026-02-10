@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getUsageHistory } from "./credits-usage.service";
 
 const mockEventsList = vi.fn();
+const mockGetCustomerId = vi.fn();
 
 vi.mock("@/lib/polar", () => ({
   polarClient: {
@@ -9,6 +10,10 @@ vi.mock("@/lib/polar", () => ({
       list: (...args: unknown[]) => mockEventsList(...args),
     },
   },
+}));
+
+vi.mock("@/features/billing/services/billing.service", () => ({
+  getCustomerId: (...args: unknown[]) => mockGetCustomerId(...args),
 }));
 
 vi.mock("@/lib/logger", () => ({
@@ -35,6 +40,7 @@ const makePolarEvent = (overrides: Record<string, unknown> = {}) => ({
 describe("getUsageHistory", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetCustomerId.mockResolvedValue("polar_cust_1");
   });
 
   it("returns formatted UsageHistoryEvent array from Polar response", async () => {
@@ -62,6 +68,20 @@ describe("getUsageHistory", () => {
       maxPage: 1,
       currentPage: 1,
     });
+  });
+
+  it("returns empty result when no Polar customer exists", async () => {
+    mockGetCustomerId.mockResolvedValue(null);
+
+    const result = await getUsageHistory("user_1");
+
+    expect(result.events).toEqual([]);
+    expect(result.pagination).toEqual({
+      totalCount: 0,
+      maxPage: 1,
+      currentPage: 1,
+    });
+    expect(mockEventsList).not.toHaveBeenCalled();
   });
 
   it("returns empty events + pagination when no customer events exist", async () => {
@@ -112,7 +132,7 @@ describe("getUsageHistory", () => {
     expect(mapped).not.toHaveProperty("externalCustomerId");
   });
 
-  it("passes limit and page options to Polar API", async () => {
+  it("passes limit and page options to Polar API with customerId", async () => {
     mockEventsList.mockResolvedValue({
       result: {
         items: [],
@@ -123,10 +143,16 @@ describe("getUsageHistory", () => {
     await getUsageHistory("user_1", { limit: 10, page: 3 });
 
     expect(mockEventsList).toHaveBeenCalledWith({
-      externalCustomerId: "user_1",
+      customerId: "polar_cust_1",
       limit: 10,
       page: 3,
       source: "user",
     });
+  });
+
+  it("logs and re-throws on Polar API error", async () => {
+    mockEventsList.mockRejectedValue(new Error("API down"));
+
+    await expect(getUsageHistory("user_1")).rejects.toThrow("API down");
   });
 });
