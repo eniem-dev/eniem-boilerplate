@@ -1,9 +1,14 @@
 import { polarClient } from "@/lib/polar";
 import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/db";
 import { UnauthorizedError } from "@/lib/errors";
 import { locales } from "@/locales";
 import { getCustomerId } from "@/features/billing/services/billing.service";
-import type { CreditBalance, UsageEvent } from "../models/credits.model";
+import type {
+  CreditBalance,
+  DeductionResult,
+  UsageEvent,
+} from "../models/credits.model";
 
 // Re-export for backwards compatibility
 export { getCustomerId };
@@ -22,21 +27,57 @@ export async function getCreditsBalance(
       externalId: userId,
     });
 
-    const meter = customerState.activeMeters?.find((m) => m.meterId === meterId);
-    if (!meter) {
-      logger.warn("Meter not found for customer", { customerId, meterId });
-      return { meterId, balance: 0, customerId };
+    const meter = customerState.activeMeters?.find(
+      (m) => m.meterId === meterId
+    );
+    const polarBalance = Math.max(0, meter?.balance ?? 0);
+
+    // Sync-on-read: upsert local row with min(local, polar)
+    const localRow = await prisma.creditBalance.upsert({
+      where: { userId_meterId: { userId, meterId } },
+      create: { userId, meterId, balance: polarBalance },
+      update: {},
+      select: { balance: true },
+    });
+
+    const syncedBalance = Math.min(localRow.balance, polarBalance);
+
+    // Update local row if sync changed the balance
+    if (syncedBalance !== localRow.balance) {
+      await prisma.creditBalance.update({
+        where: { userId_meterId: { userId, meterId } },
+        data: { balance: syncedBalance },
+      });
     }
 
-    return {
-      meterId,
-      balance: meter.balance,
-      customerId,
-    };
+    return { meterId, balance: syncedBalance, customerId };
   } catch (error) {
-    logger.error("Failed to fetch credit balance", { userId, meterId, error });
+    logger.error("Failed to fetch credit balance", {
+      userId,
+      meterId,
+      error,
+    });
     throw error;
   }
+}
+
+/**
+ * Atomically deduct credits from the local balance.
+ * Uses updateMany with a WHERE balance >= amount guard to prevent overdraft.
+ *
+ * @returns { success: true } if deduction succeeded, { success: false } if insufficient balance
+ */
+export async function deductCredits(
+  userId: string,
+  meterId: string,
+  amount: number
+): Promise<DeductionResult> {
+  const result = await prisma.creditBalance.updateMany({
+    where: { userId, meterId, balance: { gte: amount } },
+    data: { balance: { decrement: amount } },
+  });
+
+  return { success: result.count > 0 };
 }
 
 /**
@@ -59,10 +100,7 @@ export async function hasCredits(
     return false;
   }
 
-  // Treat negative balance as 0 (Polar allows negative, we don't)
-  const effectiveBalance = Math.max(0, creditBalance.balance);
-
-  return effectiveBalance >= requiredAmount;
+  return creditBalance.balance >= requiredAmount;
 }
 
 /**
@@ -82,7 +120,11 @@ export async function assertHasCredits(
   requiredAmount: number
 ): Promise<void> {
   try {
-    const hasSufficientCredits = await hasCredits(userId, meterId, requiredAmount);
+    const hasSufficientCredits = await hasCredits(
+      userId,
+      meterId,
+      requiredAmount
+    );
 
     if (!hasSufficientCredits) {
       logger.warn("Insufficient credits", { userId, meterId, requiredAmount });

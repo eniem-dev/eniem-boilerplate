@@ -4,6 +4,10 @@ export interface CreditBalance {
   customerId: string;
 }
 
+export interface DeductionResult {
+  success: boolean;
+}
+
 /**
  * Event metadata type for usage ingestion.
  * Values can be string, number, or boolean per Polar SDK constraints.

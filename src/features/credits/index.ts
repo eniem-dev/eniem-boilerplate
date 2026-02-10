@@ -12,12 +12,18 @@ export {
 } from "./meters.generated";
 
 // Models
-export type { CreditBalance, UsageMetadata, UsageEvent } from "./models/credits.model";
+export type {
+  CreditBalance,
+  DeductionResult,
+  UsageMetadata,
+  UsageEvent,
+} from "./models/credits.model";
 
 // Services
 export {
   getCustomerId,
   getCreditsBalance,
+  deductCredits,
   hasCredits,
   assertHasCredits,
   ingestUsage,
