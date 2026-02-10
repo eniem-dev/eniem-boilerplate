@@ -198,6 +198,14 @@ describe("deductCredits", () => {
 
 describe("hasCredits", () => {
   it("returns true when local balance >= required amount", async () => {
+    // Local row has balance > 0, so short-circuit is skipped
+    prismaMock.creditBalance.findUnique.mockResolvedValue({
+      id: "cb-1",
+      userId: "user-1",
+      meterId: "meter-1",
+      balance: 50,
+      updatedAt: new Date(),
+    });
     mockGetCustomerId.mockResolvedValue("cust-1");
     mockGetStateExternal.mockResolvedValue({
       activeMeters: [{ meterId: "meter-1", balance: 50 }],
@@ -215,12 +223,9 @@ describe("hasCredits", () => {
     expect(result).toBe(true);
   });
 
-  it("returns false when local balance is 0 (no Polar re-fetch)", async () => {
-    mockGetCustomerId.mockResolvedValue("cust-1");
-    mockGetStateExternal.mockResolvedValue({
-      activeMeters: [{ meterId: "meter-1", balance: 0 }],
-    } as never);
-    prismaMock.creditBalance.upsert.mockResolvedValue({
+  it("returns false immediately when local balance is 0 (no Polar re-fetch)", async () => {
+    // Local row exists with balance 0 — short-circuit
+    prismaMock.creditBalance.findUnique.mockResolvedValue({
       id: "cb-1",
       userId: "user-1",
       meterId: "meter-1",
@@ -231,11 +236,20 @@ describe("hasCredits", () => {
     const result = await hasCredits("user-1", "meter-1", 1);
 
     expect(result).toBe(false);
-    // getCreditsBalance is called once (sync-on-read), no separate Polar re-fetch
-    expect(mockGetStateExternal).toHaveBeenCalledTimes(1);
+    // No Polar API call — denied from local cache alone
+    expect(mockGetStateExternal).not.toHaveBeenCalled();
+    expect(mockGetCustomerId).not.toHaveBeenCalled();
   });
 
   it("returns false when local balance < required amount", async () => {
+    // Local row has some balance but not enough
+    prismaMock.creditBalance.findUnique.mockResolvedValue({
+      id: "cb-1",
+      userId: "user-1",
+      meterId: "meter-1",
+      balance: 5,
+      updatedAt: new Date(),
+    });
     mockGetCustomerId.mockResolvedValue("cust-1");
     mockGetStateExternal.mockResolvedValue({
       activeMeters: [{ meterId: "meter-1", balance: 5 }],
@@ -254,11 +268,35 @@ describe("hasCredits", () => {
   });
 
   it("returns false when no Polar customer exists", async () => {
+    // No local row exists — falls through to getCreditsBalance
+    prismaMock.creditBalance.findUnique.mockResolvedValue(null);
     mockGetCustomerId.mockResolvedValue(null);
 
     const result = await hasCredits("user-1", "meter-1", 1);
 
     expect(result).toBe(false);
     expect(mockGetStateExternal).not.toHaveBeenCalled();
+  });
+
+  it("falls through to getCreditsBalance when no local row exists", async () => {
+    // No local row — must sync from Polar
+    prismaMock.creditBalance.findUnique.mockResolvedValue(null);
+    mockGetCustomerId.mockResolvedValue("cust-1");
+    mockGetStateExternal.mockResolvedValue({
+      activeMeters: [{ meterId: "meter-1", balance: 100 }],
+    } as never);
+    prismaMock.creditBalance.upsert.mockResolvedValue({
+      id: "cb-1",
+      userId: "user-1",
+      meterId: "meter-1",
+      balance: 100,
+      updatedAt: new Date(),
+    });
+
+    const result = await hasCredits("user-1", "meter-1", 10);
+
+    expect(result).toBe(true);
+    // Polar was called because no local row existed
+    expect(mockGetStateExternal).toHaveBeenCalledTimes(1);
   });
 });

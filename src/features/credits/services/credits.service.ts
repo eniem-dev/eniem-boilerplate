@@ -93,6 +93,16 @@ export async function hasCredits(
   meterId: string,
   requiredAmount: number
 ): Promise<boolean> {
+  // Short-circuit: if local balance is 0, deny immediately without Polar re-fetch
+  const localRow = await prisma.creditBalance.findUnique({
+    where: { userId_meterId: { userId, meterId } },
+    select: { balance: true },
+  });
+
+  if (localRow && localRow.balance <= 0) {
+    return false;
+  }
+
   const creditBalance = await getCreditsBalance(userId, meterId);
 
   // No customer/subscription = no credits
