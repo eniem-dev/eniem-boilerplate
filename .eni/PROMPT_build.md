@@ -173,7 +173,13 @@ When no ready tasks remain for this epic/scope:
    git push
    ```
 
-5. Output completion signal:
+5. Clean up worktree:
+   ```bash
+   cd ..  # Exit worktree directory
+   git worktree remove "$WORKTREE"
+   ```
+
+6. Output completion signal:
    ```
    :::ENI_ALL_TASKS_COMPLETE:::
    ```
