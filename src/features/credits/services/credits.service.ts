@@ -22,6 +22,8 @@ export async function getCreditsBalance(
     return null;
   }
 
+  let polarBalance: number | null = null;
+
   try {
     const customerState = await polarClient.customers.getStateExternal({
       externalId: userId,
@@ -30,28 +32,24 @@ export async function getCreditsBalance(
     const meter = customerState.activeMeters?.find(
       (m) => m.meterId === meterId
     );
-    const polarBalance = Math.max(0, meter?.balance ?? 0);
-
-    // Sync-on-read: upsert local row with min(local, polar)
-    const localRow = await prisma.creditBalance.upsert({
+    polarBalance = Math.max(0, meter?.balance ?? 0);
+  } catch (error) {
+    // Polar API failure — try local fallback
+    const localRow = await prisma.creditBalance.findUnique({
       where: { userId_meterId: { userId, meterId } },
-      create: { userId, meterId, balance: polarBalance },
-      update: {},
       select: { balance: true },
     });
 
-    const syncedBalance = Math.min(localRow.balance, polarBalance);
-
-    // Update local row if sync changed the balance
-    if (syncedBalance !== localRow.balance) {
-      await prisma.creditBalance.update({
-        where: { userId_meterId: { userId, meterId } },
-        data: { balance: syncedBalance },
+    if (localRow) {
+      logger.warn("Polar API error, using local balance fallback", {
+        userId,
+        meterId,
+        error: error instanceof Error ? error.message : String(error),
       });
+      return { meterId, balance: Math.max(0, localRow.balance), customerId };
     }
 
-    return { meterId, balance: syncedBalance, customerId };
-  } catch (error) {
+    // No local row — fail-safe by throwing
     logger.error("Failed to fetch credit balance", {
       userId,
       meterId,
@@ -59,6 +57,26 @@ export async function getCreditsBalance(
     });
     throw error;
   }
+
+  // Sync-on-read: upsert local row with min(local, polar)
+  const localRow = await prisma.creditBalance.upsert({
+    where: { userId_meterId: { userId, meterId } },
+    create: { userId, meterId, balance: polarBalance },
+    update: {},
+    select: { balance: true },
+  });
+
+  const syncedBalance = Math.min(localRow.balance, polarBalance);
+
+  // Update local row if sync changed the balance
+  if (syncedBalance !== localRow.balance) {
+    await prisma.creditBalance.update({
+      where: { userId_meterId: { userId, meterId } },
+      data: { balance: syncedBalance },
+    });
+  }
+
+  return { meterId, balance: syncedBalance, customerId };
 }
 
 /**

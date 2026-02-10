@@ -173,6 +173,40 @@ describe("getCreditsBalance", () => {
       customerId: "cust-1",
     });
   });
+
+  it("falls back to local balance when Polar API fails and local row exists", async () => {
+    mockGetCustomerId.mockResolvedValue("cust-1");
+    mockGetStateExternal.mockRejectedValue(new Error("Polar API down"));
+
+    prismaMock.creditBalance.findUnique.mockResolvedValue({
+      id: "cb-1",
+      userId: "user-1",
+      meterId: "meter-1",
+      balance: 42,
+      updatedAt: new Date(),
+    });
+
+    const result = await getCreditsBalance("user-1", "meter-1");
+
+    expect(result).toEqual({
+      meterId: "meter-1",
+      balance: 42,
+      customerId: "cust-1",
+    });
+    // No upsert — used local fallback directly
+    expect(prismaMock.creditBalance.upsert).not.toHaveBeenCalled();
+  });
+
+  it("throws when Polar API fails and no local row exists (fail-safe)", async () => {
+    mockGetCustomerId.mockResolvedValue("cust-1");
+    mockGetStateExternal.mockRejectedValue(new Error("Polar API down"));
+
+    prismaMock.creditBalance.findUnique.mockResolvedValue(null);
+
+    await expect(
+      getCreditsBalance("user-1", "meter-1")
+    ).rejects.toThrow("Polar API down");
+  });
 });
 
 describe("deductCredits", () => {
