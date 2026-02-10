@@ -19,6 +19,11 @@ export const sandboxMeters = [
 
 export type MeterSlug = (typeof sandboxMeters)[number]["slug"];
 
+export type MeterEventNames<S extends MeterSlug> = Extract<
+  (typeof sandboxMeters)[number],
+  { slug: S }
+>["eventNames"][number];
+
 export function getMeters(
   env: "sandbox" | "production"
 ): readonly GeneratedMeter[] {

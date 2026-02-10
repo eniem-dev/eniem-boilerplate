@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { MeterEventNames } from "./meters.generated";
 import { getMeters, getMeter, sandboxMeters } from "./meters.generated";
 
 describe("meters.generated", () => {
@@ -41,6 +42,20 @@ describe("meters.generated", () => {
       // Type-level check: slug should be the literal "llm-tokens", not string
       const slug: "llm-tokens" = firstMeter.slug;
       expect(slug).toBe("llm-tokens");
+    });
+  });
+
+  describe("MeterEventNames", () => {
+    it("resolves to correct event name union for llm-tokens", () => {
+      // Type-level: MeterEventNames<"llm-tokens"> should be "llm-token-usage"
+      const validEvent: MeterEventNames<"llm-tokens"> = "llm-token-usage";
+      expect(validEvent).toBe("llm-token-usage");
+    });
+
+    it("rejects invalid event names at compile time", () => {
+      // @ts-expect-error - "invalid-event" is not a valid event name for llm-tokens
+      const _invalid: MeterEventNames<"llm-tokens"> = "invalid-event";
+      expect(_invalid).toBeDefined();
     });
   });
 });
