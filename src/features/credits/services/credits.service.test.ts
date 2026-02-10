@@ -31,6 +31,7 @@ import { getCustomerId } from "@/features/billing/services/billing.service";
 import {
   getCreditsBalance,
   deductCredits,
+  hasCredits,
 } from "./credits.service";
 
 const mockGetCustomerId = vi.mocked(getCustomerId);
@@ -192,5 +193,72 @@ describe("deductCredits", () => {
     const result = await deductCredits("user-1", "meter-1", 100);
 
     expect(result).toEqual({ success: false });
+  });
+});
+
+describe("hasCredits", () => {
+  it("returns true when local balance >= required amount", async () => {
+    mockGetCustomerId.mockResolvedValue("cust-1");
+    mockGetStateExternal.mockResolvedValue({
+      activeMeters: [{ meterId: "meter-1", balance: 50 }],
+    } as never);
+    prismaMock.creditBalance.upsert.mockResolvedValue({
+      id: "cb-1",
+      userId: "user-1",
+      meterId: "meter-1",
+      balance: 50,
+      updatedAt: new Date(),
+    });
+
+    const result = await hasCredits("user-1", "meter-1", 10);
+
+    expect(result).toBe(true);
+  });
+
+  it("returns false when local balance is 0 (no Polar re-fetch)", async () => {
+    mockGetCustomerId.mockResolvedValue("cust-1");
+    mockGetStateExternal.mockResolvedValue({
+      activeMeters: [{ meterId: "meter-1", balance: 0 }],
+    } as never);
+    prismaMock.creditBalance.upsert.mockResolvedValue({
+      id: "cb-1",
+      userId: "user-1",
+      meterId: "meter-1",
+      balance: 0,
+      updatedAt: new Date(),
+    });
+
+    const result = await hasCredits("user-1", "meter-1", 1);
+
+    expect(result).toBe(false);
+    // getCreditsBalance is called once (sync-on-read), no separate Polar re-fetch
+    expect(mockGetStateExternal).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns false when local balance < required amount", async () => {
+    mockGetCustomerId.mockResolvedValue("cust-1");
+    mockGetStateExternal.mockResolvedValue({
+      activeMeters: [{ meterId: "meter-1", balance: 5 }],
+    } as never);
+    prismaMock.creditBalance.upsert.mockResolvedValue({
+      id: "cb-1",
+      userId: "user-1",
+      meterId: "meter-1",
+      balance: 5,
+      updatedAt: new Date(),
+    });
+
+    const result = await hasCredits("user-1", "meter-1", 10);
+
+    expect(result).toBe(false);
+  });
+
+  it("returns false when no Polar customer exists", async () => {
+    mockGetCustomerId.mockResolvedValue(null);
+
+    const result = await hasCredits("user-1", "meter-1", 1);
+
+    expect(result).toBe(false);
+    expect(mockGetStateExternal).not.toHaveBeenCalled();
   });
 });
