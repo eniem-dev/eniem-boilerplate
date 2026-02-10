@@ -4,7 +4,7 @@
 export interface GeneratedMeter {
   slug: string;
   name: string;
-  polarMeterId: string;
+  polarMeterId: string | null;
   eventNames: string[];
 }
 
@@ -24,11 +24,19 @@ export type MeterEventNames<S extends MeterSlug> = Extract<
   { slug: S }
 >["eventNames"][number];
 
+export const productionMeters = [
+  {
+    slug: "llm-tokens",
+    name: "LLM Tokens",
+    polarMeterId: null,
+    eventNames: ["llm-token-usage"],
+  },
+] as const satisfies readonly GeneratedMeter[];
+
 export function getMeters(
   env: "sandbox" | "production"
 ): readonly GeneratedMeter[] {
-  // Production meters will be added by a subsequent task
-  return env === "sandbox" ? sandboxMeters : sandboxMeters;
+  return env === "sandbox" ? sandboxMeters : productionMeters;
 }
 
 export function getMeter(

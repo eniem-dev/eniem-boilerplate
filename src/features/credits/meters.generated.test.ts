@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { MeterEventNames } from "./meters.generated";
-import { getMeters, getMeter, sandboxMeters } from "./meters.generated";
+import {
+  getMeters,
+  getMeter,
+  sandboxMeters,
+  productionMeters,
+} from "./meters.generated";
 
 describe("meters.generated", () => {
   describe("getMeters", () => {
@@ -11,9 +16,10 @@ describe("meters.generated", () => {
       expect(meters.length).toBeGreaterThan(0);
     });
 
-    it('returns meters for "production" env', () => {
+    it('returns productionMeters array for "production" env', () => {
       const meters = getMeters("production");
-      expect(Array.isArray(meters)).toBe(true);
+      expect(meters).toBe(productionMeters);
+      expect(meters.length).toBeGreaterThan(0);
     });
   });
 
@@ -42,6 +48,29 @@ describe("meters.generated", () => {
       // Type-level check: slug should be the literal "llm-tokens", not string
       const slug: "llm-tokens" = firstMeter.slug;
       expect(slug).toBe("llm-tokens");
+    });
+  });
+
+  describe("productionMeters", () => {
+    it("has null polarMeterId values", () => {
+      for (const meter of productionMeters) {
+        expect(meter.polarMeterId).toBeNull();
+      }
+    });
+
+    it("has same slugs as sandboxMeters", () => {
+      const sandboxSlugs = sandboxMeters.map((m) => m.slug).sort();
+      const productionSlugs = productionMeters.map((m) => m.slug).sort();
+      expect(productionSlugs).toEqual(sandboxSlugs);
+    });
+  });
+
+  describe("getMeter with production env", () => {
+    it("returns production meter with null meterId", () => {
+      const meter = getMeter("production", "llm-tokens");
+      expect(meter).toBeDefined();
+      expect(meter?.slug).toBe("llm-tokens");
+      expect(meter?.polarMeterId).toBeNull();
     });
   });
 
