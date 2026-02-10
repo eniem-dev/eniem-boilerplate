@@ -245,6 +245,16 @@ export const locales = {
     },
   },
 
+  UsageHistoryPage: {
+    metadata: {
+      title: "Usage History - Your App Name",
+      description: "View your credit consumption history and usage details",
+    },
+    title: "Usage History",
+    loadMore: "Load more",
+    loading: "Loading...",
+  },
+
   PricingPage: {
     metadata: {
       title: "Pricing - Your App Name",
