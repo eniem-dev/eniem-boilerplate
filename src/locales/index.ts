@@ -228,6 +228,7 @@ export const locales = {
     sidebar: {
       general: "General",
       billing: "Billing",
+      usage: "Usage",
     },
   },
 
