@@ -1,6 +1,8 @@
 import { polarClient } from "@/lib/polar";
 import { logger } from "@/lib/logger";
+import { env } from "@/config";
 import { getCustomerId } from "@/features/billing/services/billing.service";
+import { resolveEventDisplayName } from "../meters.generated";
 import type {
   UsageHistoryEvent,
   UsageHistoryResult,
@@ -31,9 +33,10 @@ export async function getUsageHistory(
       source: "user",
     });
 
+    const polarEnv = env.payment.polarServer;
     const events: UsageHistoryEvent[] = response.result.items.map((item) => ({
       id: item.id,
-      name: item.name,
+      name: resolveEventDisplayName(polarEnv, item.name),
       timestamp: item.timestamp,
       metadata: item.metadata,
     }));

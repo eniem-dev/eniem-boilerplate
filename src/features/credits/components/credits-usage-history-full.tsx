@@ -2,13 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
 import { locales } from "@/locales";
 import { formatShortDate } from "@/features/billing/billing.util";
 import type {
@@ -16,37 +9,11 @@ import type {
   UsageHistoryResult,
 } from "../models/credits.model";
 import type { ApiResponse } from "@/lib/server-handler";
+import { MetadataTooltip } from "./metadata-tooltip";
 
 interface CreditsUsageHistoryFullProps {
   initialEvents: UsageHistoryEvent[];
   initialMaxPage: number;
-}
-
-function MetadataTooltip({
-  metadata,
-}: {
-  metadata: Record<string, string | number | boolean>;
-}) {
-  if (Object.keys(metadata).length === 0) return null;
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Info className="inline-block h-4 w-4 text-muted-foreground cursor-help" />
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className="space-y-1 text-xs">
-            {Object.entries(metadata).map(([key, value]) => (
-              <div key={key}>
-                <span className="font-medium">{key}:</span> {String(value)}
-              </div>
-            ))}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
 }
 
 export function CreditsUsageHistoryFull({

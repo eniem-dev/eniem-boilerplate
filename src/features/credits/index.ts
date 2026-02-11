@@ -9,6 +9,7 @@ export {
   productionMeters,
   getMeters,
   getMeter,
+  resolveEventDisplayName,
 } from "./meters.generated";
 
 // Models

@@ -24,9 +24,26 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
+vi.mock("@/config", () => ({
+  env: {
+    payment: {
+      polarServer: "sandbox",
+    },
+  },
+}));
+
+vi.mock("../meters.generated", () => ({
+  resolveEventDisplayName: (env: string, eventName: string) => {
+    const displayNames: Record<string, string> = {
+      "use-credit": "LLM Tokens",
+    };
+    return displayNames[eventName] ?? eventName;
+  },
+}));
+
 const makePolarEvent = (overrides: Record<string, unknown> = {}) => ({
   id: "evt_123",
-  name: "ai_generation",
+  name: "use-credit",
   timestamp: new Date("2026-02-10T12:00:00Z"),
   metadata: { model: "gpt-4", tokens: 150 },
   source: "user" as const,
@@ -44,8 +61,8 @@ describe("getUsageHistory", () => {
   });
 
   it("returns formatted UsageHistoryEvent array from Polar response", async () => {
-    const event1 = makePolarEvent({ id: "evt_1", name: "ai_generation" });
-    const event2 = makePolarEvent({ id: "evt_2", name: "image_upload" });
+    const event1 = makePolarEvent({ id: "evt_1", name: "use-credit" });
+    const event2 = makePolarEvent({ id: "evt_2", name: "unknown-event" });
 
     mockEventsList.mockResolvedValue({
       result: {
@@ -59,10 +76,11 @@ describe("getUsageHistory", () => {
     expect(result.events).toHaveLength(2);
     expect(result.events[0]).toEqual({
       id: "evt_1",
-      name: "ai_generation",
+      name: "LLM Tokens", // resolved from "use-credit"
       timestamp: event1.timestamp,
       metadata: event1.metadata,
     });
+    expect(result.events[1].name).toBe("unknown-event"); // fallback for unknown
     expect(result.pagination).toEqual({
       totalCount: 2,
       maxPage: 1,
@@ -105,7 +123,7 @@ describe("getUsageHistory", () => {
   it("correctly maps UserEvent fields to UsageHistoryEvent", async () => {
     const event = makePolarEvent({
       id: "evt_map",
-      name: "doc_scan",
+      name: "use-credit",
       timestamp: new Date("2026-01-15T08:30:00Z"),
       metadata: { pages: 5, format: "pdf", duplex: true },
     });
@@ -122,7 +140,7 @@ describe("getUsageHistory", () => {
 
     expect(mapped).toEqual({
       id: "evt_map",
-      name: "doc_scan",
+      name: "LLM Tokens", // resolved from "use-credit"
       timestamp: new Date("2026-01-15T08:30:00Z"),
       metadata: { pages: 5, format: "pdf", duplex: true },
     });

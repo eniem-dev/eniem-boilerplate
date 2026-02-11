@@ -10,50 +10,14 @@ import { locales } from "@/locales";
 import { formatShortDate } from "@/features/billing/billing.util";
 import Link from "next/link";
 import { routes } from "@/config";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
-
-function MetadataTooltip({
-  metadata,
-}: {
-  metadata: Record<string, string | number | boolean>;
-}) {
-  if (Object.keys(metadata).length === 0) return null;
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Info className="inline-block h-4 w-4 text-muted-foreground cursor-help" />
-        </TooltipTrigger>
-        <TooltipContent>
-          <div className="space-y-1 text-xs">
-            {Object.entries(metadata).map(([key, value]) => (
-              <div key={key}>
-                <span className="font-medium">{key}:</span> {String(value)}
-              </div>
-            ))}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
+import { MetadataTooltip } from "./metadata-tooltip";
 
 interface CreditsUsageHistoryCardProps {
   events: UsageHistoryEvent[];
 }
 
-export function CreditsUsageHistoryCard({
-  events,
-}: CreditsUsageHistoryCardProps) {
+export function CreditsUsageHistoryCard({ events }: CreditsUsageHistoryCardProps) {
   const l = locales.BillingOverview.creditsUsageHistoryCard;
-
   return (
     <Card>
       <CardHeader>
@@ -100,10 +64,7 @@ export function CreditsUsageHistoryCard({
             {/* Mobile card view */}
             <div className="md:hidden space-y-4">
               {events.map((event) => (
-                <div
-                  key={event.id}
-                  className="border rounded-lg p-4 space-y-3"
-                >
+                <div key={event.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium inline-flex items-center gap-1.5">
                       {event.name}
