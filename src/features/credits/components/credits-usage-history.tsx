@@ -123,9 +123,9 @@ export function CreditsUsageHistory({
           <Button
             variant="outline"
             onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
+            loading={isFetchingNextPage}
           >
-            {isFetchingNextPage ? l.loading : l.loadMore}
+            {l.loadMore}
           </Button>
         </div>
       )}

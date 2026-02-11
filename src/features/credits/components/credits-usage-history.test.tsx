@@ -108,7 +108,7 @@ describe("CreditsUsageHistory", () => {
     expect(global.fetch).toHaveBeenCalledWith("/api/credits/usage?page=2");
   });
 
-  it("shows loading state while fetching", async () => {
+  it("shows loading spinner while fetching", async () => {
     const events = [makeEvent()];
 
     let resolvePromise: (value: unknown) => void;
@@ -118,7 +118,7 @@ describe("CreditsUsageHistory", () => {
       })
     );
 
-    render(
+    const { container } = render(
       <CreditsUsageHistory initialEvents={events} initialMaxPage={2} />,
       { wrapper: createWrapper() }
     );
@@ -126,7 +126,9 @@ describe("CreditsUsageHistory", () => {
     fireEvent.click(screen.getByText("Load more"));
 
     await waitFor(() => {
-      expect(screen.getByText("Loading...")).toBeInTheDocument();
+      expect(
+        container.querySelector("svg.animate-spin")
+      ).toBeInTheDocument();
     });
 
     // Resolve to clean up
@@ -142,7 +144,9 @@ describe("CreditsUsageHistory", () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
+      expect(
+        container.querySelector("svg.animate-spin")
+      ).not.toBeInTheDocument();
     });
   });
 
