@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { locales } from "@/locales";
 import { formatShortDate } from "@/features/billing/billing.util";
@@ -11,41 +11,56 @@ import type {
 import type { ApiResponse } from "@/lib/server-handler";
 import { MetadataTooltip } from "./metadata-tooltip";
 
-interface CreditsUsageHistoryFullProps {
+interface CreditsUsageHistoryProps {
   initialEvents: UsageHistoryEvent[];
   initialMaxPage: number;
 }
 
-export function CreditsUsageHistoryFull({
+async function fetchUsagePage(
+  page: number
+): Promise<UsageHistoryResult> {
+  const response = await fetch(`/api/credits/usage?page=${page}`);
+  if (!response.ok) throw new Error("Failed to load usage history");
+
+  const json: ApiResponse<UsageHistoryResult> = await response.json();
+  if (!json.success) throw new Error(json.error);
+
+  return json.data;
+}
+
+export function CreditsUsageHistory({
   initialEvents,
   initialMaxPage,
-}: CreditsUsageHistoryFullProps) {
+}: CreditsUsageHistoryProps) {
   const l = locales.UsageHistoryPage;
-  const cl = locales.BillingOverview.creditsUsageHistoryCard;
-  const [events, setEvents] = useState(initialEvents);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [maxPage, setMaxPage] = useState(initialMaxPage);
-  const [isLoading, setIsLoading] = useState(false);
+  const cl = locales.CreditsUsageHistory;
 
-  const hasMore = currentPage < maxPage;
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["credits-usage-history"],
+    queryFn: ({ pageParam }) => fetchUsagePage(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.currentPage < lastPage.pagination.maxPage
+        ? lastPage.pagination.currentPage + 1
+        : undefined,
+    initialData: {
+      pages: [
+        {
+          events: initialEvents,
+          pagination: { totalCount: 0, maxPage: initialMaxPage, currentPage: 1 },
+        },
+      ],
+      pageParams: [1],
+    },
+    staleTime: 60 * 1000,
+  });
 
-  const loadMore = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const nextPage = currentPage + 1;
-      const response = await fetch(`/api/credits/usage?page=${nextPage}`);
-      if (!response.ok) throw new Error("Failed to load more");
-
-      const json: ApiResponse<UsageHistoryResult> = await response.json();
-      if (!json.success) throw new Error(json.error);
-
-      setEvents((prev) => [...prev, ...json.data.events]);
-      setCurrentPage(nextPage);
-      setMaxPage(json.data.pagination.maxPage);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentPage]);
+  const events = data?.pages.flatMap((page) => page.events) ?? [];
 
   if (events.length === 0) {
     return <p className="text-muted-foreground">{cl.emptyState}</p>;
@@ -103,14 +118,14 @@ export function CreditsUsageHistoryFull({
         ))}
       </div>
 
-      {hasMore && (
+      {hasNextPage && (
         <div className="flex justify-center pt-4">
           <Button
             variant="outline"
-            onClick={loadMore}
-            disabled={isLoading}
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
           >
-            {isLoading ? l.loading : l.loadMore}
+            {isFetchingNextPage ? l.loading : l.loadMore}
           </Button>
         </div>
       )}

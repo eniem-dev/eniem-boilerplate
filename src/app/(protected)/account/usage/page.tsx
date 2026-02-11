@@ -2,7 +2,7 @@ import { createMetadata, getDefaultMetadata } from "@/lib/metadata";
 import { locales } from "@/locales";
 import { ErrorCard } from "@/components/error-card";
 import { getCreditsUsageQuery } from "@/features/credits/queries/credits-usage.query";
-import { CreditsUsageHistoryFull } from "@/features/credits/components/credits-usage-history-full";
+import { CreditsUsageHistory } from "@/features/credits/components/credits-usage-history";
 import {
   Card,
   CardContent,
@@ -29,7 +29,7 @@ export default async function UsageHistoryPage() {
         <CardTitle>{locales.UsageHistoryPage.title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <CreditsUsageHistoryFull
+        <CreditsUsageHistory
           initialEvents={data.events}
           initialMaxPage={data.pagination.maxPage}
         />

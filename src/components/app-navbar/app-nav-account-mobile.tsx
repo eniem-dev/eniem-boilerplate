@@ -60,7 +60,7 @@ export function AppNavAccountMobile() {
         {locales.NavAccount.accountLabel}
       </Link>
       <Link
-        href={routes.account.billing.index}
+        href={routes.account.billing}
         className={cn(
           buttonVariants({ variant: "ghost", size: "lg" }),
           "flex flex-row-reverse items-center justify-between w-full"

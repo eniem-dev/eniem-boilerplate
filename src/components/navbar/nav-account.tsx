@@ -96,7 +96,7 @@ export function NavAccount() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={routes.account.billing.index}>
+              <Link href={routes.account.billing}>
                 <CreditCard />
                 {locales.NavAccount.billingLabel}
               </Link>

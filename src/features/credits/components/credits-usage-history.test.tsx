@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { CreditsUsageHistoryFull } from "./credits-usage-history-full";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { CreditsUsageHistory } from "./credits-usage-history";
 import type { UsageHistoryEvent } from "../models/credits.model";
 
 const makeEvent = (
@@ -13,7 +14,19 @@ const makeEvent = (
   ...overrides,
 });
 
-describe("CreditsUsageHistoryFull", () => {
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
+}
+
+describe("CreditsUsageHistory", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -25,7 +38,8 @@ describe("CreditsUsageHistoryFull", () => {
     ];
 
     render(
-      <CreditsUsageHistoryFull initialEvents={events} initialMaxPage={1} />
+      <CreditsUsageHistory initialEvents={events} initialMaxPage={1} />,
+      { wrapper: createWrapper() }
     );
 
     expect(screen.getAllByText("LLM Tokens")).toHaveLength(2); // desktop + mobile
@@ -33,7 +47,9 @@ describe("CreditsUsageHistoryFull", () => {
   });
 
   it("shows empty state when events array is empty", () => {
-    render(<CreditsUsageHistoryFull initialEvents={[]} initialMaxPage={1} />);
+    render(<CreditsUsageHistory initialEvents={[]} initialMaxPage={1} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByText("No usage yet")).toBeInTheDocument();
   });
@@ -42,7 +58,8 @@ describe("CreditsUsageHistoryFull", () => {
     const events = [makeEvent()];
 
     render(
-      <CreditsUsageHistoryFull initialEvents={events} initialMaxPage={3} />
+      <CreditsUsageHistory initialEvents={events} initialMaxPage={3} />,
+      { wrapper: createWrapper() }
     );
 
     expect(screen.getByText("Load more")).toBeInTheDocument();
@@ -52,7 +69,8 @@ describe("CreditsUsageHistoryFull", () => {
     const events = [makeEvent()];
 
     render(
-      <CreditsUsageHistoryFull initialEvents={events} initialMaxPage={1} />
+      <CreditsUsageHistory initialEvents={events} initialMaxPage={1} />,
+      { wrapper: createWrapper() }
     );
 
     expect(screen.queryByText("Load more")).not.toBeInTheDocument();
@@ -74,10 +92,11 @@ describe("CreditsUsageHistoryFull", () => {
     });
 
     render(
-      <CreditsUsageHistoryFull
+      <CreditsUsageHistory
         initialEvents={initialEvents}
         initialMaxPage={2}
-      />
+      />,
+      { wrapper: createWrapper() }
     );
 
     fireEvent.click(screen.getByText("Load more"));
@@ -100,12 +119,15 @@ describe("CreditsUsageHistoryFull", () => {
     );
 
     render(
-      <CreditsUsageHistoryFull initialEvents={events} initialMaxPage={2} />
+      <CreditsUsageHistory initialEvents={events} initialMaxPage={2} />,
+      { wrapper: createWrapper() }
     );
 
     fireEvent.click(screen.getByText("Load more"));
 
-    expect(screen.getByText("Loading...")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Loading...")).toBeInTheDocument();
+    });
 
     // Resolve to clean up
     resolvePromise!({
@@ -128,7 +150,8 @@ describe("CreditsUsageHistoryFull", () => {
     const events = [makeEvent({ metadata: { model: "gpt-4", tokens: 100 } })];
 
     const { container } = render(
-      <CreditsUsageHistoryFull initialEvents={events} initialMaxPage={1} />
+      <CreditsUsageHistory initialEvents={events} initialMaxPage={1} />,
+      { wrapper: createWrapper() }
     );
 
     // Info icons should be present (2 for desktop + mobile)

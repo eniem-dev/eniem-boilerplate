@@ -36,9 +36,7 @@ export const routes = {
   },
   account: {
     general: "/account/general",
-    billing: {
-      index: "/account/billing",
-    },
+    billing: "/account/billing",
     usage: "/account/usage",
   },
 };

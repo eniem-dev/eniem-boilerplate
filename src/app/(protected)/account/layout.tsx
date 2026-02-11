@@ -22,7 +22,7 @@ export default function AccountSubLayout({ children }: AccountLayoutProps) {
     {
       id: "billing",
       label: locales.AccountPage.sidebar.billing,
-      href: routes.account.billing.index,
+      href: routes.account.billing,
     },
     {
       id: "usage",
