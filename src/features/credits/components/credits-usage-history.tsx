@@ -4,10 +4,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { locales } from "@/locales";
 import { formatShortDate } from "@/features/billing/billing.util";
-import type {
-  UsageHistoryEvent,
-  UsageHistoryResult,
-} from "../models/credits.model";
+import type { UsageHistoryEvent, UsageHistoryResult } from "../models/credits.model";
 import type { ApiResponse } from "@/lib/server-handler";
 import { MetadataTooltip } from "./metadata-tooltip";
 
@@ -16,9 +13,7 @@ interface CreditsUsageHistoryProps {
   initialMaxPage: number;
 }
 
-async function fetchUsagePage(
-  page: number
-): Promise<UsageHistoryResult> {
+async function fetchUsagePage(page: number): Promise<UsageHistoryResult> {
   const response = await fetch(`/api/credits/usage?page=${page}`);
   if (!response.ok) throw new Error("Failed to load usage history");
 
@@ -35,12 +30,17 @@ export function CreditsUsageHistory({
   const l = locales.UsageHistoryPage;
   const cl = locales.CreditsUsageHistory;
 
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useInfiniteQuery({
+  const initialData = {
+    pages: [
+      {
+        events: initialEvents,
+        pagination: { totalCount: 0, maxPage: initialMaxPage, currentPage: 1 },
+      },
+    ],
+    pageParams: [1],
+  };
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["credits-usage-history"],
     queryFn: ({ pageParam }) => fetchUsagePage(pageParam),
     initialPageParam: 1,
@@ -48,15 +48,7 @@ export function CreditsUsageHistory({
       lastPage.pagination.currentPage < lastPage.pagination.maxPage
         ? lastPage.pagination.currentPage + 1
         : undefined,
-    initialData: {
-      pages: [
-        {
-          events: initialEvents,
-          pagination: { totalCount: 0, maxPage: initialMaxPage, currentPage: 1 },
-        },
-      ],
-      pageParams: [1],
-    },
+    initialData,
     staleTime: 60 * 1000,
   });
 
