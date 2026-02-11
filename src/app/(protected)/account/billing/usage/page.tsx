@@ -3,6 +3,12 @@ import { locales } from "@/locales";
 import { ErrorCard } from "@/components/error-card";
 import { getCreditsUsageQuery } from "@/features/credits/queries/credits-usage.query";
 import { CreditsUsageHistoryFull } from "@/features/credits/components/credits-usage-history-full";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export const metadata = createMetadata({
   ...getDefaultMetadata(),
@@ -18,14 +24,16 @@ export default async function UsageHistoryPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">
-        {locales.UsageHistoryPage.title}
-      </h1>
-      <CreditsUsageHistoryFull
-        initialEvents={data.events}
-        initialMaxPage={data.pagination.maxPage}
-      />
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>{locales.UsageHistoryPage.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <CreditsUsageHistoryFull
+          initialEvents={data.events}
+          initialMaxPage={data.pagination.maxPage}
+        />
+      </CardContent>
+    </Card>
   );
 }

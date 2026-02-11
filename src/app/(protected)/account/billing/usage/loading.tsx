@@ -1,19 +1,11 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { locales } from "@/locales";
 
-export function CreditsUsageHistorySkeleton() {
-  const l = locales.BillingOverview.creditsUsageHistoryCard;
-
+export default function UsageHistoryLoading() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{l.title}</CardTitle>
+        <Skeleton className="h-6 w-32" />
       </CardHeader>
       <CardContent>
         {/* Desktop table skeleton */}
@@ -22,16 +14,16 @@ export function CreditsUsageHistorySkeleton() {
             <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 pr-4 text-sm font-medium text-muted-foreground w-3/4">
-                    {l.columns.event}
+                  <th className="text-left py-3 pr-4 w-3/4">
+                    <Skeleton className="h-4 w-12" />
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground w-1/4">
-                    {l.columns.date}
+                  <th className="text-left py-3 px-4 w-1/4">
+                    <Skeleton className="h-4 w-10" />
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {Array.from({ length: 4 }).map((_, i) => (
+                {Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b last:border-b-0">
                     <td className="py-4 pr-4">
                       <Skeleton className="h-4 w-32" />
@@ -48,7 +40,7 @@ export function CreditsUsageHistorySkeleton() {
 
         {/* Mobile card skeleton */}
         <div className="md:hidden space-y-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="border rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-4 w-32" />

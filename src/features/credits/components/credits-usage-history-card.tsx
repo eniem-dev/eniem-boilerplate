@@ -31,13 +31,13 @@ export function CreditsUsageHistoryCard({ events }: CreditsUsageHistoryCardProps
             {/* Desktop table view */}
             <div className="hidden md:block">
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 pr-4 text-sm font-medium text-muted-foreground">
+                      <th className="text-left py-3 pr-4 text-sm font-medium text-muted-foreground w-3/4">
                         {l.columns.event}
                       </th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground w-1/4">
                         {l.columns.date}
                       </th>
                     </tr>
