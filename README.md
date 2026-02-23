@@ -5,7 +5,7 @@
 <h1 align="center">Eniem Boilerplate</h1>
 
 <p align="center">
-  A production-ready Next.js 15 boilerplate with authentication, payments, and everything you need to ship fast.
+  A production-ready Next.js 15 boilerplate with authentication, payments, and everything you need to ship fast. Start building today.
 </p>
 
 ---
@@ -19,6 +19,20 @@ git remote remove origin && rm -rf .git && git init
 pnpm install
 pnpm dev
 ```
+
+## Rebranding
+
+This boilerplate uses `myapp` (slug) and `MyApp` (display name) as placeholders. Replace them with your own project name:
+
+```bash
+# Replace display name (e.g., "My Cool App")
+grep -rl "MyApp" . --exclude-dir={node_modules,.git} | xargs sed -i 's/MyApp/Your App Name/g'
+
+# Replace slug (e.g., "mycoolapp")
+grep -rl "myapp" . --exclude-dir={node_modules,.git} | xargs sed -i 's/myapp/yourslug/g'
+```
+
+> **Note:** If your project name contains regex special characters (`.`, `*`, `+`, etc.), you'll need to escape them in the sed commands.
 
 ## Documentation
 
